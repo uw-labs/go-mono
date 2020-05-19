@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package uwlabs.users.service.v1;
+
+import "uwlabs/users/v1/users.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+option go_package = "github.com/uw-labs/go-mono/proto/gen/go/uwlabs/users/service/v1;usersservicepb";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+	info: {
+		title: "Example User API";
+		version: "1.0";
+	};
+	external_docs: {
+		url: "https://github.com/uw-labs/go-mono/tree/master/cmd/user-api/README.md";
+		description: "The User API repo";
+	};
+	security_definitions: {
+		security: {
+			key: "BasicAuth";
+			value: {
+				type: TYPE_BASIC;
+			}
+		}
+    };
+};
+
+service UserReaderService {
+    rpc GetUser (GetUserRequest) returns (GetUserResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{user_id}"
+        };
+    }
+
+    rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {
+        option (google.api.http) = {
+            get: "/v1/users"
+        };
+    }
+}
+
+service UserWriterService {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users"
+            body: "*"
+        };
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            security: {
+                security_requirement: {
+                    key: "BasicAuth";
+                    value: {}
+                }
+            }
+        };
+    }
+}
+
+
+message CreateUserRequest {
+    string name = 1;
+}
+
+message CreateUserResponse {
+    uwlabs.users.v1.User user = 1;
+}
+
+message GetUserRequest {
+    string user_id = 1;
+}
+
+message GetUserResponse {
+    uwlabs.users.v1.User user = 1;
+}
+
+message ListUsersRequest {
+    repeated string names = 1;
+    SortOrder sort_order = 4;
+}
+
+message ListUsersResponse {
+    repeated uwlabs.users.v1.User users = 1;
+}
+
+message SortOrder {
+    OrderBy by = 1;
+    bool descending = 2;
+}
+
+enum OrderBy {
+    ORDER_BY_NONE = 0;
+    ORDER_BY_NAME = 1;
+    ORDER_BY_CREATE_TIME = 2;
+}

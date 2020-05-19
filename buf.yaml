@@ -1,0 +1,15 @@
+build:
+  roots:
+    - proto
+breaking:
+  use:
+    - FILE
+lint:
+  ignore:
+    - google
+    - protoc-gen-swagger
+  use:
+    - DEFAULT
+  except:
+    - SERVICE_SUFFIX
+  enum_zero_value_suffix: _NONE

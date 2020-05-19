@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package uwlabs.users.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/uw-labs/go-mono/proto/gen/go/uwlabs/users/v1;userspb";
+
+message User {
+    string id = 1;
+    string name = 2;
+    google.protobuf.Timestamp create_time = 3;
+}

@@ -1,0 +1,2 @@
+# Disable language statistics for go vendor folder
+vendor/* linguist-vendored
