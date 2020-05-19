@@ -1,0 +1,14 @@
+linters-settings:
+    golint:
+        min-confidence: 0.1
+    goimports:
+        local-prefixes: logur.dev/logur
+
+linters:
+    enable-all: true
+    disable:
+        - funlen
+        - wsl
+
+service:
+    golangci-lint-version: 1.21.x

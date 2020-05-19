@@ -1,0 +1,12 @@
+linters-settings:
+    golint:
+        min-confidence: 0.1
+    goimports:
+        local-prefixes: logur.dev/adapter/logrus
+
+linters:
+    enable-all: true
+    disable:
+        - funlen
+        - wsl
+        - gomnd

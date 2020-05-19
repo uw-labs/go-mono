@@ -1,15 +1,197 @@
 version: 2.1
 
 jobs:
-  echo:
+  format:
     docker:
       - image: golang:1.14
     steps:
       - checkout
-      - run: echo "Hello world"
+      - run:
+          name: Format
+          command: make format
+      - run:
+          name: Check for changes
+          command: git diff --exit-code
+  generate:
+    docker:
+      - image: golang:1.14
+    steps:
+      - checkout
+      - run:
+          name: Install generators
+          command: make install-generators
+      - run:
+          name: Generate
+          command: go generate -x ./...
+      - run:
+          name: Check for changes
+          command: git diff --exit-code
+  imports:
+    docker:
+      - image: golang:1.14
+    steps:
+      - checkout
+      - run:
+          name: Lint imports
+          command: make lint-imports
+  lint:
+    docker:
+      - image: golangci/golangci-lint:latest
+    steps:
+      - checkout
+      - run:
+          name: Lint
+          command: golangci-lint run --timeout 5m0s
+  mod:
+    docker:
+      - image: golang:1.14
+    steps:
+      - checkout
+      - run:
+          name: Tidy
+          command: go mod tidy && go mod vendor
+      - run:
+          name: Check for changes
+          command: git diff --exit-code
+  proto_breaking:
+    docker:
+      - image: bufbuild/buf:latest
+    steps:
+      - checkout
+      - run:
+          name: Sync master with remote master unless current branch
+          command: if [[ $(git rev-parse --abbrev-ref HEAD) != "master" ]]; then git branch -f master origin/master; fi
+      - run:
+          name: Check for breaking changes
+          command: buf check breaking --against-input '.git#branch=master'
+  proto_lint:
+    docker:
+      - image: bufbuild/buf:latest
+    steps:
+      - checkout
+      - run:
+          name: Check for breaking changes
+          command: buf check lint
+  proto_generate:
+    docker:
+      - image: golang:1.14
+    steps:
+      - checkout
+      - run:
+          name: Install protoc
+          environment:
+            PROTOC_VERSION: 3.12.1
+          command: >
+            apt-get update && apt-get install -y unzip &&
+            wget https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip \
+              -O protoc-${PROTOC_VERSION}-linux-x86_64.zip &&
+            unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d /usr/local/ &&
+            rm -f protoc-${PROTOC_VERSION}-linux-x86_64.zip
+      - run:
+          name: Install generators
+          command: make install-generators
+      - run:
+          name: Delete generated files
+          command: find ./proto/gen/ -mindepth 2 -maxdepth 2 -type d -exec rm -r {} +
+      - run:
+          name: Generate protofiles
+          command: ./proto/generate.sh
+      - run: 
+          name: Check for changes
+          command: git diff --exit-code
+  test:
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run:
+          name: Generate checksum file
+          command: find . -type f -name "*.go" -exec sha256sum {} >> files.sum +
+      - restore_cache:
+          keys:
+            - go-test-cache-v1-{{ checksum "files.sum" }}
+            - go-test-cache-v1-
+      - run:
+          name: Update Go installation
+          command: |
+            wget https://github.com/lpar/goup/releases/download/1.0/goup-linux-x64.xz &&
+            xz --decompress goup-linux-x64.xz &&
+            chmod +x goup-linux-x64
+            sudo rm -rf /usr/local/go &&
+            yes | sudo ./goup-linux-x64 --force --os linux --arch amd64 || true # swallow exit 141
+      - run:
+          name: Go test
+          command: go test -race ./...
+      - save_cache:
+          key: go-test-cache-v1-{{ checksum "files.sum" }}
+          paths:
+            # CircleCI users $GOCACHE
+            - /home/circleci/.cache/go-build
+  release:
+    parallelism: 2
+    docker:
+      - image: circleci/golang:1.14
+    environment:
+      BASE_REVISION: <<pipeline.git.base_revision>>
+      HEAD_REVISION: <<pipeline.git.revision>>
+    steps:
+      - checkout
+      - run:
+          name: Generate checksum file
+          command: find . -type f -name "*.go" -exec sha256sum {} >> files.sum +
+      - restore_cache:
+          keys:
+            - go-build-cache-v1-{{ checksum "files.sum" }}
+            - go-build-cache-v1-
+      - run:
+          name: Sync master with remote master unless current branch
+          command: if [[ $(git rev-parse --abbrev-ref HEAD) != "master" ]]; then git branch -f master origin/master; fi
+      - run:
+          name: Calculate builds
+          # Calculates the binaries with a deploy.yml file
+          # that will need releasing, based on the git file
+          # changes between BASE_REVISION and HEAD_REVISION
+          # and outputs them to the file builds.txt
+          command: |
+            go run ./cmd/calculate-releases/ \
+              --module-name github.com/uw-labs/go-mono \
+              --base "${BASE_REVISION}" \
+              --head "${HEAD_REVISION}" \
+              --build-file builds.txt
+      - setup_remote_docker:
+          version: 17.06.0-ce
+      - run:
+          name: Build release images
+          # Splits the release jobs with
+          # circleci tests split, and runs 4x
+          # deploy jobs for each runner.
+          command: |
+            cat builds.txt | \
+            circleci tests split | \
+            xargs -P 4 -I % \
+            go run ./cmd/deploy/main.go \
+              --repo-root $(pwd) \
+              --deploy-file % \
+              --docker-registry docker.pkg.github.com/uw-labs/go-mono \
+              --docker-user "${DOCKER_USER}" \
+              --docker-password "${DOCKER_PASSWORD}"
+      - save_cache:
+          key: go-build-cache-v1-{{ checksum "files.sum" }}
+          paths:
+            # CircleCI users $GOCACHE
+            - /home/circleci/.cache/go-build
 
 workflows:
   version: 2
   build:
     jobs:
-      - echo
+      - test
+      - release
+      - format
+      - generate
+      - imports
+      - lint
+      - mod
+      - proto_breaking
+      - proto_lint
+      - proto_generate
