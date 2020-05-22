@@ -43,11 +43,16 @@ in the Circle CI configuration environment variables.
 The Dockerfile used to build the images is [here](./cmd/deploy/internal/docker/static/Dockerfile).
 It can be edited as necessary, just make sure to run `make generate` after changing it.
 
+For an example of this, the [user-api](./cmd/user-api/main.go) is published automatically to
+[the local GitHub docker registry](https://github.com/uw-labs/go-mono/packages/237911)
+whenever it requires rebuilding.
+
 ## Repository Layout
 
 * [cmd](cmd) - Utilities and service applications.
   * [cmd/calculate-releases](cmd/calculate-releases/main.go) Script for calculating applications to publish.
   * [cmd/deploy](cmd/deploy/main.go) Script for building and publishing docker images.
+  * [cmd/user-api](cmd/user-api/main.go) Example application with deploy.yml.
 * [pkg](pkg) - Shared packages.
 * [proto](proto) - Protobuf definitions & generated code.
 * [vendor](vendor) - Vendored third-party dependencies.
