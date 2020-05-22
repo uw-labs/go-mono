@@ -39,6 +39,9 @@ The `release` CI job automatically figures out what needs building and publishes
 image to the configured registry. It requires the setting of `DOCKER_USER` and `DOCKER_PASSWORD`
 in the Circle CI configuration environment variables.
 
+The Dockerfile used to build the images is [here](./cmd/deploy/internal/docker/static/Dockerfile).
+It can be edited as necessary, just make sure to run `make generate` after changing it.
+
 ## Repository Layout
 
 * [cmd](cmd) - Utilities and service applications.
