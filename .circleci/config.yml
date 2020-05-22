@@ -55,7 +55,7 @@ jobs:
           command: git diff --exit-code
   proto_breaking:
     docker:
-      - image: bufbuild/buf:latest
+      - image: bufbuild/buf:0.13.0
     steps:
       - checkout
       - run:
@@ -66,7 +66,7 @@ jobs:
           command: buf check breaking --against-input '.git#branch=master'
   proto_lint:
     docker:
-      - image: bufbuild/buf:latest
+      - image: bufbuild/buf:0.13.0
     steps:
       - checkout
       - run:
