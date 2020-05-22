@@ -14,12 +14,15 @@ If you're creating a new repo from this template, you'll want to do a search-rep
 $ find . -type d -name "uwlabs" -exec mv {} $(dirname {})/yourorg +
 $ find . -type f -exec sed -i 's;github.com/uw-labs/go-mono;yourscm.com/yourorg/yourrepo;g' {} +
 $ find . -type f -exec sed -i 's;uwlabs;yourorg;g' {} +
-``` 
+```
+
+Configure `DOCKER_USER` and `DOCKER_PASSWORD` in your CircleCI settings for release
+builds to work. The registry path to use is configured in the `release` CI job.
 
 ## CI Setup
 
 The CI setup uses Circle CI, partly because of the powerful caching features, and partly
-because CircleCI machine users have access to a local docker socket, which
+because Circle CI machine users have access to a local docker socket, which
 allows us to run integration tests using `go test` which work both locally and in CI.
 The CI jobs rely on Go build and test caching to be efficient even with a larger number of services.
 The same CI setup is used to efficiently test and publish over 130 applications within UW.
@@ -29,6 +32,12 @@ The same CI setup is used to efficiently test and publish over 130 applications 
 * [golangci-lint](https://github.com/golangci/golangci-lint) for Go code.
 * [buf](https://github.com/bufbuild/buf) for protobuf linting and breaking change detection.
 * [gofumports](https://github.com/mvdan/gofumpt) for formatting and imports.
+
+### Automatic publishing
+
+The `release` CI job automatically figures out what needs building and publishes a docker
+image to the configured registry. It requires the setting of `DOCKER_USER` and `DOCKER_PASSWORD`
+in the Circle CI configuration environment variables.
 
 ## Repository Layout
 
