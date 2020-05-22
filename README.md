@@ -8,10 +8,11 @@ It's been built for tight CI integration and developer productivity.
 ## Making it your own
 
 If you're creating a new repo from this template, you'll want to do a search-replace on
-`github.com/uw-labs/go-mono` and `uwlabs`:
+`github.com/uw-labs/go-mono` and `uwlabs` (replacing `yourorg`, `yourrepo` and `yourscm`
+with your own):
 
 ```shell
-$ find . -type d -name "uwlabs" -exec mv {} $(dirname {})/yourorg +
+$ find . -type d -name "uwlabs" -exec sh -c 'mv {} $(dirname {})/yourorg' \;
 $ find . -type f -exec sed -i 's;github.com/uw-labs/go-mono;yourscm.com/yourorg/yourrepo;g' {} +
 $ find . -type f -exec sed -i 's;uwlabs;yourorg;g' {} +
 ```
