@@ -12,10 +12,11 @@ import (
 	"time"
 
 	assetfs "github.com/elazarl/go-bindata-assetfs"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/uw-labs/go-mono/cmd/user-api/internal/repo"
 	"github.com/uw-labs/go-mono/cmd/user-api/internal/server"
@@ -24,7 +25,7 @@ import (
 	usersservicepb "github.com/uw-labs/go-mono/proto/gen/go/uwlabs/users/service/v1"
 )
 
-//go:generate cp ../../proto/gen/swagger/uwlabs/users/service/v1/service.swagger.json ./third_party/swagger/swagger.json
+//go:generate cp ../../proto/gen/openapiv2/uwlabs/users/service/v1/service.swagger.json ./third_party/swagger/swagger.json
 //go:generate go-bindata -pkg swagger -prefix third_party/swagger -nometadata -ignore bindata -o ./third_party/swagger/bindata.go ./third_party/swagger
 
 var (
@@ -129,9 +130,9 @@ func run(logger *logrus.Logger, postgresURL, adminUser, adminPassword string, gr
 	}()
 
 	jsonpb := &runtime.JSONPb{
-		EmitDefaults: true,
-		Indent:       "  ",
-		OrigName:     true,
+		MarshalOptions: protojson.MarshalOptions{
+			Indent: "  ",
+		},
 	}
 	gwmux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, jsonpb),

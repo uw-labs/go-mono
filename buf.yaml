@@ -7,7 +7,7 @@ breaking:
 lint:
   ignore:
     - google
-    - protoc-gen-swagger
+    - protoc-gen-openapiv2
   use:
     - DEFAULT
   except:
