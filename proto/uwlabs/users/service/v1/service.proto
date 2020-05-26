@@ -4,11 +4,11 @@ package uwlabs.users.service.v1;
 
 import "uwlabs/users/v1/users.proto";
 import "google/api/annotations.proto";
-import "protoc-gen-swagger/options/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 option go_package = "github.com/uw-labs/go-mono/proto/gen/go/uwlabs/users/service/v1;usersservicepb";
 
-option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 	info: {
 		title: "Example User API";
 		version: "1.0";
@@ -47,7 +47,7 @@ service UserWriterService {
             post: "/v1/users"
             body: "*"
         };
-		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+		option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
             security: {
                 security_requirement: {
                     key: "BasicAuth";
