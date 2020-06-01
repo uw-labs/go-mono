@@ -1,5 +1,58 @@
 version: 2.1
 
+commands:
+  generate_files_sum:
+    steps:
+      - run:
+          name: Generate checksum file
+          command: find . -type f -name "*.go" -not -path "./vendor/*" -exec sha256sum {} > files.sum +
+  restore_test_cache:
+    steps:
+      - generate_files_sum
+      - restore_cache:
+          keys:
+            # First look for same deps same go files
+            - v1-go-test-cache-{{ checksum "go.sum" }}-{{ checksum "files.sum" }}
+            # Look for same deps different files
+            - v1-go-test-cache-{{ checksum "go.sum" }}
+            # Look for same files different deps
+            - v1-go-test-cache-{{ checksum "files.sum" }}
+            # Fall back to latest test cache
+            - v1-go-test-cache-
+  save_test_cache:
+    steps:
+      - save_cache:
+          key: v1-go-test-cache-{{ checksum "go.sum" }}-{{ checksum "files.sum" }}
+          paths:
+            - /home/circleci/.cache/go-build
+      - save_cache:
+          key: v1-go-test-cache-{{ checksum "files.sum" }}
+          paths:
+            - /home/circleci/.cache/go-build
+  restore_release_cache:
+    steps:
+      - generate_files_sum
+      - restore_cache:
+          keys:
+            # First look for same deps same go files
+            - v1-go-release-cache-{{ checksum "go.sum" }}-{{ checksum "files.sum" }}
+            # Look for same deps different files
+            - v1-go-release-cache-{{ checksum "go.sum" }}
+            # Look for same files different deps
+            - v1-go-release-cache-{{ checksum "files.sum" }}
+            # Fall back to latest release cache
+            - v1-go-release-cache-
+  save_release_cache:
+    steps:
+      - save_cache:
+          key: v1-go-release-cache-{{ checksum "go.sum" }}-{{ checksum "files.sum" }}
+          paths:
+            - /home/circleci/.cache/go-build
+      - save_cache:
+          key: v1-go-release-cache-{{ checksum "files.sum" }}
+          paths:
+            - /home/circleci/.cache/go-build
+
 jobs:
   format:
     docker:
@@ -104,13 +157,7 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run:
-          name: Generate checksum file
-          command: find . -type f -name "*.go" -exec sha256sum {} >> files.sum +
-      - restore_cache:
-          keys:
-            - go-test-cache-v1-{{ checksum "files.sum" }}
-            - go-test-cache-v1-
+      - restore_test_cache
       - run:
           name: Update Go installation
           command: |
@@ -122,11 +169,7 @@ jobs:
       - run:
           name: Go test
           command: go test -race ./...
-      - save_cache:
-          key: go-test-cache-v1-{{ checksum "files.sum" }}
-          paths:
-            # CircleCI users $GOCACHE
-            - /home/circleci/.cache/go-build
+      - save_test_cache
   release:
     parallelism: 2
     docker:
@@ -136,13 +179,7 @@ jobs:
       HEAD_REVISION: <<pipeline.git.revision>>
     steps:
       - checkout
-      - run:
-          name: Generate checksum file
-          command: find . -type f -name "*.go" -exec sha256sum {} >> files.sum +
-      - restore_cache:
-          keys:
-            - go-build-cache-v1-{{ checksum "files.sum" }}
-            - go-build-cache-v1-
+      - restore_release_cache
       - run:
           name: Sync master with remote master unless current branch
           command: if [[ $(git rev-parse --abbrev-ref HEAD) != "master" ]]; then git branch -f master origin/master; fi
@@ -175,11 +212,7 @@ jobs:
               --docker-registry docker.pkg.github.com/uw-labs/go-mono \
               --docker-user "${DOCKER_USER}" \
               --docker-password "${DOCKER_PASSWORD}"
-      - save_cache:
-          key: go-build-cache-v1-{{ checksum "files.sum" }}
-          paths:
-            # CircleCI users $GOCACHE
-            - /home/circleci/.cache/go-build
+      - save_release_cache
 
 workflows:
   version: 2
